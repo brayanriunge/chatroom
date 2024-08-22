@@ -42,8 +42,20 @@ export async function getServerSideProps() {
     },
   });
 
+  // Convert Date objects to strings
+  const serializedMessages = messages.map((message) => ({
+    ...message,
+    createdAt: message.createdAt.toISOString(),
+
+    user: {
+      ...message.user,
+      createdAt: message.user.createdAt.toISOString(),
+      updatedAt: message.user.updatedAt.toISOString(),
+    },
+  }));
+
   return {
-    props: { messages },
+    props: { messages: serializedMessages },
   };
 }
 

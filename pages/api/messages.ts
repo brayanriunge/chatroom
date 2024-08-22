@@ -15,10 +15,13 @@ export default async function handler(
 
   if (req.method === "POST") {
     const { content } = req.body;
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email as string },
+    });
     const message = await prisma.message.create({
       data: {
         content,
-        userId: session.user.id, // Use session data correctly
+        userId: user?.id as string, // Use session data correctly
       },
     });
     res.json(message);

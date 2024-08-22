@@ -38,6 +38,7 @@ model Message {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+
 enum Role {
   USER
   ADMIN
