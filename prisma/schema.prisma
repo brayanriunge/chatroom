@@ -28,14 +28,29 @@ model User {
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  Reply Reply[]
 }
 
 model Message {
   id       String    @id @default(cuid())
   content   String
+  reply    String?   // Admin reply
   createdAt DateTime @default(now())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+
+  Reply Reply[]
+}
+model Reply {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id])
+  userId   String
+  user    User     @relation(fields: [userId], references: [id])
 }
 
 
