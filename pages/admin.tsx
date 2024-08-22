@@ -2,7 +2,15 @@ import { prisma } from "@/utils/db";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 
-const AdminDashboard = ({ messages }: { messages: string[] }) => {
+type Message = {
+  id: string;
+  content: string;
+  user: {
+    name: string;
+  };
+};
+
+const AdminDashboard = ({ messages }: { messages: Message[] }) => {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -18,6 +26,7 @@ const AdminDashboard = ({ messages }: { messages: string[] }) => {
         {messages.map((message) => (
           <div key={message.id} className="p-4 bg-gray-100 rounded">
             <p>{message.content}</p>
+            <p>From: {message.user.name}</p>
             {/* Add form to reply to the message */}
           </div>
         ))}
