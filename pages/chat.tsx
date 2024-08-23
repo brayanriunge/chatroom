@@ -51,6 +51,7 @@ const Chat = () => {
         <Link href={"/admin"}>Dashboard</Link>
       </button>
     </div>
+    <p> hey</p>
   );
 };
 
