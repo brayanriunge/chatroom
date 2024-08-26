@@ -28,4 +28,22 @@ export default async function handler(
   } else {
     res.status(405).end();
   }
+
+  if (req.method === "GET") {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    const messages = await prisma.message.findMany({
+      where: { userId: userId as string },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return res.json(messages);
+  }
+
+  res.status(405).end();
 }
