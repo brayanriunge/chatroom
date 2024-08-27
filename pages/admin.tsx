@@ -2,11 +2,18 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { User } from "next-auth";
+import { prisma } from "@/utils/db";
 
 type Message = {
   id: string;
   content: string;
-  reply: string | null;
+  replies: {
+    id: string;
+    content: string;
+    user: {
+      name: string;
+    };
+  }[];
   user: {
     name: string;
   };
@@ -42,20 +49,24 @@ const AdminDashboard = ({
     }
   };
 
-  const handleReplySubmit = async (id: string) => {
+  const handleReplySubmit = async (messageId: string) => {
     const res = await fetch(`http://localhost:3000/api/reply`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id, reply: replies[id] }),
+      body: JSON.stringify({ messageId, content: replies[messageId] }),
     });
     if (res.ok) {
-      const updatedMessage = await res.json();
+      const updatedReply = await res.json();
       setMessages((prev) =>
-        prev.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg))
+        prev.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, replies: [...msg.replies, updatedReply] }
+            : msg
+        )
       );
-      setReplies((prev) => ({ ...prev, [id]: "" }));
+      setReplies((prev) => ({ ...prev, [messageId]: "" }));
     }
   };
 
@@ -65,19 +76,23 @@ const AdminDashboard = ({
       <div className="w-1/4 p-4 bg-gray-100">
         <h2 className="text-lg font-bold mb-4">Users</h2>
         <ul className="space-y-2">
-          {users.map((user) => (
-            <li
-              key={user.id}
-              className={`p-2 cursor-pointer ${
-                selectedUserId === user.id
-                  ? "bg-blue-500 text-white"
-                  : "bg-white"
-              } rounded-lg`}
-              onClick={() => handleSelectUser(user.id)}
-            >
-              {user.name}
-            </li>
-          ))}
+          {Array.isArray(users) && users.length > 0 ? (
+            users.map((user) => (
+              <li
+                key={user.id}
+                className={`p-2 cursor-pointer ${
+                  selectedUserId === user.id
+                    ? "bg-blue-500 text-white"
+                    : "bg-white"
+                } rounded-lg`}
+                onClick={() => handleSelectUser(user.id)}
+              >
+                {user.name}
+              </li>
+            ))
+          ) : (
+            <li>No users found.</li>
+          )}
         </ul>
       </div>
 
@@ -96,9 +111,17 @@ const AdminDashboard = ({
                     <p className="font-bold">{msg.user.name}</p>
                     <p>{msg.content}</p>
                   </div>
-                  {msg.reply && (
-                    <div className="self-end max-w-xs p-3 bg-green-500 text-white rounded-lg">
-                      <p>Admin: {msg.reply}</p>
+                  {msg.replies && msg.replies.length > 0 && (
+                    <div>
+                      {msg.replies.map((reply) => (
+                        <div
+                          key={reply.id}
+                          className="self-end max-w-xs p-3 bg-green-500 text-white rounded-lg"
+                        >
+                          <p>Admin: {reply.content}</p>
+                          <p className="text-sm">By: {reply.user.name}</p>
+                        </div>
+                      ))}
                     </div>
                   )}
                   <div className="flex items-center space-x-2">
@@ -129,5 +152,54 @@ const AdminDashboard = ({
     </div>
   );
 };
+
+export async function getServerSideProps() {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  const initialMessages =
+    users.length > 0
+      ? await prisma.message.findMany({
+          where: { userId: users[0].id },
+          include: {
+            user: true,
+            Reply: {
+              include: {
+                user: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        })
+      : [];
+
+  // Serialize dates to strings
+  const serializedMessages = initialMessages.map((message) => ({
+    ...message,
+    createdAt: message.createdAt.toISOString(),
+
+    Reply: message.Reply.map((reply) => ({
+      ...reply,
+      createdAt: reply.createdAt.toISOString(),
+      updatedAt: reply.updatedAt.toISOString(),
+    })),
+    user: {
+      ...message.user,
+      createdAt: message.user.createdAt?.toISOString(),
+      updatedAt: message.user.updatedAt?.toISOString(),
+    },
+  }));
+
+  return {
+    props: {
+      users,
+      initialMessages: serializedMessages,
+    },
+  };
+}
 
 export default AdminDashboard;
