@@ -21,7 +21,7 @@ const Chat = ({ initialMessages }: { initialMessages: Message[] }) => {
   const sendMessage = async () => {
     if (message.trim() === "") return;
 
-    const res = await fetch("/api/messages", {
+    const res = await fetch("http://localhost:3000/api/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: message }),

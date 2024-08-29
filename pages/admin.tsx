@@ -7,7 +7,7 @@ import { prisma } from "@/utils/db";
 type Message = {
   id: string;
   content: string;
-  replies: {
+  Reply: {
     id: string;
     content: string;
     user: {
@@ -50,23 +50,34 @@ const AdminDashboard = ({
   };
 
   const handleReplySubmit = async (messageId: string) => {
-    const res = await fetch(`http://localhost:3000/api/reply`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ messageId, content: replies[messageId] }),
-    });
-    if (res.ok) {
-      const updatedReply = await res.json();
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId
-            ? { ...msg, replies: [...msg.replies, updatedReply] }
-            : msg
-        )
-      );
-      setReplies((prev) => ({ ...prev, [messageId]: "" }));
+    try {
+      const res = await fetch(`http://localhost:3000/api/reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messageId, content: replies[messageId] }),
+      });
+
+      if (res.ok) {
+        const updatedReply = await res.json();
+
+        // Update the message list to include the new reply
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId
+              ? { ...msg, Reply: [...msg.Reply, updatedReply] }
+              : msg
+          )
+        );
+
+        // Clear the input field for the replied message
+        setReplies((prev) => ({ ...prev, [messageId]: "" }));
+      } else {
+        console.error("Failed to submit reply.");
+      }
+    } catch (error) {
+      console.error("An error occurred while submitting the reply:", error);
     }
   };
 
@@ -111,15 +122,15 @@ const AdminDashboard = ({
                     <p className="font-bold">{msg.user.name}</p>
                     <p>{msg.content}</p>
                   </div>
-                  {msg.replies && msg.replies.length > 0 && (
+
+                  {msg.Reply && msg.Reply.length > 0 && (
                     <div>
-                      {msg.replies.map((reply) => (
+                      {msg.Reply.map((reply) => (
                         <div
                           key={reply.id}
                           className="self-end max-w-xs p-3 bg-green-500 text-white rounded-lg"
                         >
                           <p>Admin: {reply.content}</p>
-                          <p className="text-sm">By: {reply.user.name}</p>
                         </div>
                       ))}
                     </div>
@@ -177,21 +188,26 @@ export async function getServerSideProps() {
         })
       : [];
 
-  // Serialize dates to strings
-  const serializedMessages = initialMessages.map((message) => ({
-    ...message,
-    createdAt: message.createdAt.toISOString(),
+  // Convert Date objects to strings
+  const serializedMessages = initialMessages.map((msg) => ({
+    ...msg,
+    createdAt: msg.createdAt.toISOString(),
 
-    Reply: message.Reply.map((reply) => ({
+    user: {
+      ...msg.user,
+      createdAt: msg.user.createdAt?.toISOString(),
+      updatedAt: msg.user.updatedAt?.toISOString(),
+    },
+    Reply: msg.Reply.map((reply) => ({
       ...reply,
       createdAt: reply.createdAt.toISOString(),
       updatedAt: reply.updatedAt.toISOString(),
+      user: {
+        ...reply.user,
+        createdAt: reply.user.createdAt?.toISOString(),
+        updatedAt: reply.user.updatedAt?.toISOString(),
+      },
     })),
-    user: {
-      ...message.user,
-      createdAt: message.user.createdAt?.toISOString(),
-      updatedAt: message.user.updatedAt?.toISOString(),
-    },
   }));
 
   return {
