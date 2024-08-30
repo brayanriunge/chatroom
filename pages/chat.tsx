@@ -119,6 +119,7 @@ type Message = {
   Reply: {
     id: string;
     content: string;
+    createdAt: string;
     user: {
       name: string;
     };
@@ -182,7 +183,9 @@ const Chat = ({ initialMessages }: { initialMessages: Message[] }) => {
                     className="p-3 bg-green-500 text-white rounded-lg mt-2"
                   >
                     <p>{reply.content}</p>
-                    <p className="text-xs text-gray-200 text-right"></p>
+                    <p className="text-xs text-gray-200 text-right">
+                      {new Date(msg.createdAt).toLocaleTimeString()}
+                    </p>
                   </div>
                 ))}
               </div>
