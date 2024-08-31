@@ -184,7 +184,7 @@ const Chat = ({ initialMessages }: { initialMessages: Message[] }) => {
                   >
                     <p>{reply.content}</p>
                     <p className="text-xs text-gray-200 text-right">
-                      {new Date(msg.createdAt).toLocaleTimeString()}
+                      {new Date(msg.createdAt).toLocaleTimeString()} hey
                     </p>
                   </div>
                 ))}
